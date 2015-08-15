@@ -1,0 +1,206 @@
+---
+title: "Stat 133 Final Project"
+author: "Hanna Haddad and Swati Govindaraju"
+date: "August 14, 2015"
+output: pdf_document
+---
+
+```{r, echo=FALSE, warning=FALSE}
+library(maps)
+library("dplyr")
+library("ggplot2")
+library("stringr")
+```
+
+This project entails the study of attributes amd volume of storm occurances observed in the North Atlantic Storm Basin from 1850-2013 - in particular - those observed from 1980-2010.
+
+We use the database [International Best Track Archive for Climate Stewardship (IBTrACS)](ftp://eclipse.ncdc.noaa.gov/pub/ibtracs/v03r06/wmo/cxml/year). Specifically, we work with [the North Atlantic Basin file](ftp://eclipse.ncdc.noaa.gov/pub/ibtracs/v03r06/wmo/hurdat_format/basin/Basin.NA.ibtracs_hurdat.v03r06.hdat) which contains all observations for the North Atlantic Storm Basin.
+
+# Cleaning
+Webscraping XML format data yielded raw data in R, containing only attributes intended for analysis.  These attributes included id, date, time, latitude, longitude, duration, stage classification,  pressure and wind speed. 
+This raw data was then cleaned and entered into two new data frames - storms.csv and tracks.csv - that were most convenient for the data analysis below.   
+
+```{r, echo=FALSE}
+# Load necessary data frames, and tables.  
+storms = read.csv("../data/storms.csv", 
+                  stringsAsFactors = FALSE)
+tracks = read.csv("../data/tracks.csv", 
+                 stringsAsFactors = FALSE)
+
+tracks = mutate(tracks, 
+                year = factor(str_sub(as.character(tracks$date), 1, 4)))
+tracks = mutate(tracks, 
+                month = factor(str_sub(as.character(tracks$date), 6,7)))
+tracks = filter(tracks, 
+                as.numeric(as.character(year))>=1980 & as.numeric(as.character(year))<=2010)
+
+```
+
+# Analysis
+
+First we analyzed the data by creating frequency tables and corresponding bar plots for the number of storms per year and per month in total, and with winds >= 35 knots, 64 knots, and 96 knots.
+The resulting tables and their corresponding bar plots are below.
+
+Frequency Table and Barplot of Total Number of Storms Per Year:
+```{r, echo=FALSE}
+table(tracks$year)
+stormsPerYear_total = barplot(table(tracks$year), 
+        main = "Number of Storms per Year from 1980-2010", 
+        xlab = "Year", 
+        ylab = "Number of Storms")
+```
+
+Frequency Table and Barplot of Number of Storms Per Year with Windspeeds >= 35 knots:
+```{r, echo=FALSE}
+table(select(filter(tracks, wind>=35), year))
+stormsPerYear_35 = barplot(table(select(filter(tracks, wind>=35), year)), 
+        main = "Number of Storms per Year with wind >= 35 knots", 
+        xlab = "Year", 
+        ylab = "Number of Storms")
+```
+
+Frequency Table and Barplot of Number of Storms Per Year with Windspeeds >= 64 knots:
+```{r, echo=FALSE}
+table(select(filter(tracks, wind>=64), year))
+stormsPerYear_64 = barplot(table(select(filter(tracks, wind>=64), year)), 
+        main = "Number of Storms per Year with wind >= 64 knots", 
+        xlab = "Year", 
+        ylab = "Number of Storms")
+```
+
+Frequency Table and Barplot of Number of Storms Per Year with Windspeeds >= 96 knots:
+```{r, echo=FALSE}
+table(select(filter(tracks, wind>=96), year))
+stormsPerYear_96 = barplot(table(select(filter(tracks, wind>=96), year)), 
+        main = "Number of Storms per Year with wind >= 96 knots", 
+        xlab = "Year", 
+        ylab = "Number of Storms")
+```
+Collectively, there seems to have been a moderate general increase in the number of storms occuring starting from the mid-1990s onward, but there is so much fluctuation and noise, that one cannot say for sure whether the number of storms per year is increasing.  Interestingly, at higher windspeeds there seems to be an almost periodic increase and decrease in number of occuring storms.  This could perhaps have something to do with cyclical ocean temeperature and air surface pressure changes (ie. El Nino), that cause noticeably different and predictable weather changes every couple of years.    
+
+Frequency Table and Barplot of Total Number of Storms Per Month:
+```{r, echo=FALSE}
+table(tracks$month)
+stormsPerMonth_total = barplot(table(tracks$month), 
+        main = "Number of Storms per Month from 1980-2010", 
+        xlab = "Month", 
+        ylab = "Number of Storms")
+```
+
+Frequency Table and Barplot of Number of Storms Per Month with Windspeeds >= 35 knots:
+```{r, echo=FALSE}
+table(select(filter(tracks, wind>=35), month))
+stormsPerMonth_35 = barplot(table(select(filter(tracks, wind>=35), month)), 
+        main = "Number of Storms per Month with wind >= 35 knots", 
+        xlab = "Month", 
+        ylab = "Number of Storms")
+```
+
+Frequency Table and Barplot of Number of Storms Per Month with Windspeeds >= 64 knots:
+```{r, echo=FALSE}
+table(select(filter(tracks, wind>=64), month))
+stormsPerMonth_64 = barplot(table(select(filter(tracks, wind>=64), month)), 
+        main = "Number of Storms per Month with wind >= 64 knots", 
+        xlab = "Month", 
+        ylab = "Number of Storms")
+```
+
+Frequency Table and Barplot of Number of Storms Per Month with Windspeeds >= 96 knots:
+```{r, echo=FALSE}
+table(select(filter(tracks, wind>=96), month))
+stormsPerMonth_96 = barplot(table(select(filter(tracks, wind>=96), month)), 
+        main = "Number of Storms per Month with wind >= 96 knots", 
+        xlab = "Month", 
+        ylab = "Number of Storms")
+```
+Collectively, these tables that look at number of storms on a monthly basis obviously show that storms are more likely to occur during certain months (specifically from August to October, but more more broadly from June to December) than during other months.  Further, with each progressive graph, it can be seen that as windspeed increases, the range of months during which they will occur shrinks.  In essence, very severe storms are most likely to occur around September, specifically.   
+
+We then continued this analysis by creating a table of the average number of storms with windspeeds >= 35 knots, 64 knots, and 96 knots per year.  
+```{r, echo=FALSE}
+# Avg Number of storms >= 35 knots
+avg35 = mean(table(select(filter(tracks, wind>=35), year)))
+std35 = sd(table(select(filter(tracks, wind>=35), year)))
+
+quartiles35 = summary(as.numeric(table(select(filter(tracks, wind>=35), year))))
+q1_35 = as.numeric(quartiles35)[2]
+q2_35 = as.numeric(quartiles35)[3]
+q3_35 = as.numeric(quartiles35)[5]
+
+# Avg Number of storms >= 64 knots
+avg64 = mean(table(select(filter(tracks, wind>=64), year)))
+std64 = sd(table(select(filter(tracks, wind>=64), year)))
+
+quartiles64 = summary(as.numeric(table(select(filter(tracks, wind>=64), year))))
+q1_64 = as.numeric(quartiles64)[2]
+q2_64 = as.numeric(quartiles64)[3]
+q3_64 = as.numeric(quartiles64)[5]
+
+# Avg Number of storms >= 96 knots
+avg96 = mean(table(select(filter(tracks, wind>=96), year)))
+std96 = sd(table(select(filter(tracks, wind>=96), year)))
+
+quartiles96 = summary(as.numeric(table(select(filter(tracks, wind>=96), year))))
+q1_96 = as.numeric(quartiles96)[2]
+q2_96 = as.numeric(quartiles96)[3]
+q3_96 = as.numeric(quartiles96)[5]
+
+# Create data table: Annual Average Number of Storms
+AnnualAvgNumberOfStorms = data.frame("Avg" = c(avg35, avg64, avg96), "Std Dev"  = c(std35, std64, std96), "25th" = c(q1_35, q1_64, q1_96), "50th" = c(q2_35, q2_64, q2_96), "75th" = c(q3_35, q3_64, q3_96), row.names = c("35 knots", "64 knots", "96 knots"))
+```
+This table appears to verify our previous analyses.  
+
+After this, we completed a regression analysis to look for correlation between average pressure and windspeed per storm, and median pressure and windspeed per storm.  We then used ggplot2 to plot the data and visualise this possible correlation. 
+
+Summary of linear model for mean windspeed and mean pressure of each storm:
+```{r, echo=FALSE}
+summary(lm(mean_press~mean_wind, data = reg1_df))
+```
+
+Plot of regression model with data points: 
+```{r, echo=FALSE}
+reg1_plot = ggplot(reg1_df, aes(x = mean_press, y = mean_wind)) +
+  geom_smooth(method = "lm") +
+  geom_point() + 
+  ggtitle("Linear Regression 1: Average Pressure and Average Windspeed") 
+```
+
+Summary of linear model for median windspeed and median pressure of each storm:
+```{r, echo=FALSE}
+summary(lm(med_press~med_wind, data = reg2_df))
+```
+
+Plot of regression model with data points: 
+```{r, echo=FALSE}
+reg2_plot = ggplot(reg2_df, aes(x = med_press, y = med_wind)) +
+  geom_smooth(method = "lm") +
+  geom_point() + 
+  ggtitle("Linear Regression 2: Median Pressure and Median Windspeed") 
+```
+Both the graphs support the intuitive notion that surface pressure and wind speed are highly correlated with regards to tropical storms.  Each graph looks at correlation between these two variables using different measures of central tendancy, and each graph arrives at the same conclusion of high correlation.    
+
+# Visualisation
+
+We then proceeded with our analysis by further visualising the data on the world map.  Below are the total hurricane trajectories from 1999-2010, the hurricane trajectories from 1999-2010 by year, and the hurricane trajectories from 1999-2010 by month.  
+
+Total Hurricane Trajectories From 1999-2010:
+```{r, echo=FALSE}
+
+```
+
+Hurricane Trajectories From 1999-2010 by Year:
+```{r, echo=FALSE}
+
+```
+
+Hurricane Trajectories From 1999-2010 by Month:
+```{r, echo=FALSE}
+
+```
+
+```{r, echo=FALSE}
+
+```
+
+```{r, echo=FALSE}
+
+```
